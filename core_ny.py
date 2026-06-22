@@ -1,16 +1,25 @@
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
+import zoneinfo
+
+# Postavljanje vremenske zone za Oslo da sat ne bi žurio
+oslo_tz = zoneinfo.ZoneInfo("Europe/Oslo")
 
 st.set_page_config(page_title="InCase CORE", layout="centered")
 
 logo_path = Path("logo.png")
 
-# CSS-stiler
+# Moderniji i čistiji CSS stilovi (prilagođeni za mobilni telefon)
 st.markdown("""
 <style>
-    .core-text {color: #FF8C00; font-size: 75px; font-weight: 900; letter-spacing: 18px; margin-top: -45px; text-align: center;}
-    .start-time {font-size: 24px; font-weight: bold; color: #00FF88; text-align: center; margin-top: 10px;}
+    .core-title {color: #FF8C00; font-size: 42px; font-weight: 900; letter-spacing: 5px; text-align: center; margin-bottom: 20px;}
+    .login-box {background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;}
+    
+    /* Stil za kružić koji se vrti */
+    .spinner-container {display: flex; align-items: center; gap: 12px; background-color: #f0f7f4; border-left: 5px solid #00FF88; padding: 15px; border-radius: 4px; margin-top: 15px; margin-bottom: 15px;}
+    .loader-circle {border: 3px solid #f3f3f3; border-top: 3px solid #00FF88; border-radius: 50%; width: 22px; height: 22px; animation: spin 1s linear infinite;}
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -61,12 +70,13 @@ users = {
 
 # --- INNLØGGINGSSYSTEM ---
 if not st.session_state.logged_in:
-    st.markdown("<h2 class='core-text'>CORE</h2>", unsafe_allow_html=True)
+    st.markdown("<div class='core-title'>InCase CORE</div>", unsafe_allow_html=True)
     st.subheader("🔑 Logg inn")
-    username = st.text_input("Brukernavn (f.eks. fornavn)", placeholder="miroslav", key="login_user").lower()
-    password = st.text_input("Passord", type="password", placeholder="1234", key="login_pass")
     
-    if st.button("Logg inn", type="primary"):
+    username = st.text_input("Brukernavn (f.eks. fornavn)", placeholder="miroslav", key="login_user").lower()
+    password = st.text_input("Passord", type="password", placeholder="••••", key="login_pass")
+    
+    if st.button("Logg inn", type="primary", use_container_width=True):
         if username in users and users[username]["password"] == password:
             st.session_state.logged_in = True
             st.session_state.current_user = users[username]["name"]
@@ -75,35 +85,45 @@ if not st.session_state.logged_in:
             st.error("Feil brukernavn eller passord")
     st.stop()
 
-# --- HOVEDSKJERM ---
-col1, col2, col3 = st.columns([1,4,1])
-with col2:
+# --- BOČNA NAVIGACIJA (HAMBURGER MENI NA TELEFONU) ---
+with st.sidebar:
     if logo_path.exists():
-        st.image(str(logo_path), width=420)
-    st.markdown("<h2 class='core-text'>CORE</h2>", unsafe_allow_html=True)
+        st.image(str(logo_path), use_container_width=True)
+    else:
+        st.markdown("<h2 style='color: #FF8C00; text-align: center;'>InCase CORE</h2>", unsafe_allow_html=True)
+        
+    st.write(f"👤 Ulogget: **{st.session_state.current_user}**")
+    st.markdown("---")
+    
+    # Izbor stranica iz bočnog menija
+    izbor_stranice = st.radio(
+        "Hovedmeny:",
+        [
+            "👤 Min Side", 
+            "📋 Reg. Aktivitet", 
+            "⏱️ Reg. Tid",
+            "📊 Prosjekter", 
+            "✅ Historikk", 
+            "👥 Brukere"
+        ]
+    )
+    
+    st.markdown("---")
+    if st.button("🚪 Logg ut", use_container_width=True, type="secondary"):
+        st.session_state.logged_in = False
+        st.session_state.current_user = None
+        st.session_state.timer_start = None
+        st.rerun()
 
-if st.button("🚪 Logg ut"):
-    st.session_state.logged_in = False
-    st.session_state.current_user = None
-    st.session_state.timer_start = None
-    st.rerun()
+# --- PRIKAZ STRANICA NA OSNOVU IZBORA IZ MENIJA ---
 
-st.markdown("---")
-
-# Dodat novi Tab 1 "Min Side"
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "👤 Min Side", "📋 Reg. Aktivitet", "⏱️ Reg. Tid",
-    "📊 Prosjekter", "✅ Historikk", "👥 Brukere"
-])
-
-# FANE 1: MIN SIDE (Lični profil radnika sa njegovom statistikom)
-with tab1:
-    st.subheader(f"Velkommen, {st.session_state.current_user} 👋")
+# STRANICA 1: MIN SIDE
+if izbor_stranice == "👤 Min Side":
+    st.markdown(f"<h2 style='color: #333;'>Velkommen, {st.session_state.current_user} 👋</h2>", unsafe_allow_html=True)
     st.write("Dette er ditt personlige dashbord for timeføring.")
     
-    idag = datetime.now().strftime("%Y-%m-%d")
+    idag = datetime.now(oslo_tz).strftime("%Y-%m-%d")
     
-    # Računanje samo onih sati koji pripadaju trenutno ulogovanom radniku
     mine_timer_idag = sum(float(l["vanlig_tid"]) + float(l["overtid"]) for l in st.session_state.v8_time_logs if l["bruker"] == st.session_state.current_user and l["dato"] == idag)
     mitt_overtid_idag = sum(float(l["overtid"]) for l in st.session_state.v8_time_logs if l["bruker"] == st.session_state.current_user and l["dato"] == idag)
     
@@ -122,8 +142,8 @@ with tab1:
         for log in mine_logger_idag:
             st.write(f"🏢 **{log['prosjekt']}** | {log['timer']} t totalt (Overtid: {log['overtid']} t)")
 
-# FANE 2: REGISTRER AKTIVITET
-with tab2:
+# STRANICA 2: REGISTRER AKTIVITET
+elif izbor_stranice == "📋 Reg. Aktivitet":
     st.subheader("Registrer Aktivitet og Fremdrift")
     aktivne_opcije = [p for p, data in st.session_state.v8_projects.items() if data["status"] == "Aktiv"]
     izabrani_prosjekt = st.selectbox("Velg prosjekt", [""] + aktivne_opcije, index=0, key="sb_akt_projekt")
@@ -145,13 +165,13 @@ with tab2:
             )
             st.markdown("---")
         
-        if st.button("LAGRE AKTIVITET FOR PROSJEKT", type="primary"):
+        if st.button("LAGRE AKTIVITET FOR PROSJEKT", type="primary", use_container_width=True):
             st.session_state.v8_projects[izabrani_prosjekt]["activities"] = novi_unosi
             st.success(f"✅ Daglig rapport lagret for prosjekt **{izabrani_prosjekt}**!")
             st.rerun()
 
-# FANE 3: REGISTRER TID
-with tab3:
+# STRANICA 3: REGISTRER TID (KULTURNI SAT SA KRUŽIĆEM)
+elif izbor_stranice == "⏱️ Reg. Tid":
     st.subheader("Registrer Arbeidstid")
     projekti_tid = [p for p, data in st.session_state.v8_projects.items() if data["status"] == "Aktiv"]
     izabrani_prosjekt_tid = st.selectbox("Velg prosjekt", [""] + projekti_tid, index=0, key="sb_tid_projekt")
@@ -164,19 +184,21 @@ with tab3:
         col_start, col_stop = st.columns(2)
         
         with col_start:
-            if st.button("▶️ START TIMER", use_container_width=True):
-                st.session_state.timer_start = datetime.now()
+            # Dugme se gasi ako je već pokrenuto
+            if st.button("▶️ START TIMER", use_container_width=True, disabled=(st.session_state.timer_start is not None)):
+                st.session_state.timer_start = datetime.now(oslo_tz)
                 st.rerun()
                     
         with col_stop:
-            if st.button("⏹️ STOPP & LAGRE", use_container_width=True):
+            # Dugme se gasi ako tajmer nije ni pokrenut
+            if st.button("⏹️ STOPP & LAGRE", use_container_width=True, disabled=(st.session_state.timer_start is None)):
                 if st.session_state.timer_start is not None:
-                    duration = datetime.now() - st.session_state.timer_start
+                    duration = datetime.now(oslo_tz) - st.session_state.timer_start
                     hours_spent = round(duration.total_seconds() / 3600, 2)
                     if hours_spent == 0:
                         hours_spent = round((duration.total_seconds() / 60) / 60, 2)
                     
-                    idag = datetime.now().strftime("%Y-%m-%d")
+                    idag = datetime.now(oslo_tz).strftime("%Y-%m-%d")
                     allerede_jobbet = sum(float(log.get("timer", 0)) for log in st.session_state.v8_time_logs if log["bruker"] == st.session_state.current_user and log["dato"] == idag)
                     
                     if allerede_jobbet + hours_spent > 8.0:
@@ -191,22 +213,29 @@ with tab3:
                     st.success(f"✅ Lagret: {round(hours_spent, 2)} timer")
                     st.session_state.timer_start = None
                     st.rerun()
-                else:
-                    st.warning("Timeren er ikke startet ennå.")
-                    
+
+        # NOVI IZGLED AKTIVNOG SATA: Čist tekst i krug koji se vrti
         if st.session_state.timer_start:
-            start_str = st.session_state.timer_start.strftime("%H:%M:%S")
-            st.markdown(f"<div class='start-time'>⏰ Timeren kjører... Startet kl: {start_str}</div>", unsafe_allow_html=True)
+            start_str = st.session_state.timer_start.strftime("%H:%M")
+            st.markdown(f"""
+            <div class="spinner-container">
+                <div class="loader-circle"></div>
+                <div style="color: #1e3a2f; font-weight: 500; font-size: 15px;">
+                    🟢 Tidsregistrering er aktiv... <br>
+                    <span style="font-size: 13px; color: #555; font-weight: normal;">Arbeidet startet kl. {start_str}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("#### Alternativ 2: Manuell registrering")
         manuelle_timer = str(st.text_input("Antall timer (f.eks. 7.5)", placeholder="7.5", key="manuell_inn")).replace(",", ".")
         
-        if st.button("Lagre manuelle timer", type="secondary"):
+        if st.button("Lagre manuelle timer", type="secondary", use_container_width=True):
             if manuelle_timer:
                 try:
                     t_float = float(manuelle_timer)
-                    idag = datetime.now().strftime("%Y-%m-%d")
+                    idag = datetime.now(oslo_tz).strftime("%Y-%m-%d")
                     allerede_jobbet = sum(float(log.get("timer", 0)) for log in st.session_state.v8_time_logs if log["bruker"] == st.session_state.current_user and log["dato"] == idag)
                     
                     if allerede_jobbet + t_float > 8.0:
@@ -223,8 +252,8 @@ with tab3:
                 except ValueError:
                     st.error("Ugyldig tall format.")
 
-# FANE 4: PROSJEKTER (PRODUKTIVITET)
-with tab4:
+# STRANICA 4: PROSJEKTER
+elif izbor_stranice == "📊 Prosjekter":
     st.subheader("📊 Oversikt over Aktive Prosjekter og Produktivitet")
     aktive_p = {k: v for k, v in st.session_state.v8_projects.items() if v["status"] == "Aktiv"}
     
@@ -255,7 +284,7 @@ with tab4:
             with col_p3:
                 st.metric("Produktivitet", produktivitet_str)
             
-            st.write(f"**Total gjennomsnittlig fremdrift:** {round(ukupni_progres, 1)}%")
+            st.write(f"**Total gjenomsnittlig fremdrift:** {round(ukupni_progres, 1)}%")
             st.progress(ukupni_progres / 100)
             st.caption(f"⏱️ *Herav automatisert overtid:* {round(overtid_timer, 2)} t (Beregnet for lønn i Google Sheets)")
             
@@ -265,13 +294,13 @@ with tab4:
                 
             st.markdown("---")
 
-# FANE 5: HISTORIKK
-with tab5:
+# STRANICA 5: HISTORIKK
+elif izbor_stranice == "✅ Historikk":
     st.subheader("✅ Fullførte Prosjekter (Historikk)")
     st.info("Historikk over fullførte prosjekter basert på avsluttede ordre.")
 
-# FANE 6: BRUKERE
-with tab6:
+# STRANICA 6: BRUKERE
+elif izbor_stranice == "👥 Brukere":
     st.subheader("👥 Brukere og Kontaktinformasjon")
     kontakti = [
         ("Allan Gaupset", "+47 986 84 808", "allan@incase.no"),
@@ -286,4 +315,4 @@ with tab6:
         st.write(f"📞 {tel} | ✉️ {mail}")
         st.markdown("---")
 
-st.caption("InCase CORE v4.0 - Min Side Pilot")
+st.caption("InCase CORE v4.1 - Min Side Pilot")
