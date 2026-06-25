@@ -14,26 +14,13 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- PAMETNI AUTOMATSKI SKENER LOGOTIPA ---
-# Skener koji ignoriše velika i mala slova i pronalazi logo na serveru bez obzira na naziv
-def pronadji_najbolji_logo(tip_teme):
+# --- BEZBEDAN PRIKAZ SLIKA (Nikada ne može da sruši aplikaciju) ---
+def bezbedan_prikaz_logotipa(ime_fajla):
     try:
-        svi_fajlovi = os.listdir('.')
-        # Ako je tamna tema, tražimo beli logo (sa rečju 'lys'), ako je svetla tražimo tamni logo ('mørk')
-        if tip_teme == "dark":
-            prioriteti = ['ics-utenbord-lys@2x', 'ics-utenbord-lys', 'ic-utenbord-lys@2x', 'ic-utenbord-lys', 'just incase']
-        else:
-            prioriteti = ['ics-utenbord-mørk@2x', 'ics-utenbord-mørk', 'ic-utenbord-mørk@2x', 'ic-utenbord-mørk', 'just incase']
-            
-        for prioritet in prioriteti:
-            for fajl in svi_fajlovi:
-                if prioritet in fajl.lower() and fajl.lower().endswith('.png'):
-                    return fajl
+        if os.path.exists(ime_fajla):
+            st.image(ime_fajla, use_container_width=True)
     except:
-        pass
-    return "Just inCase!.png" # Sigurna rezerva ako sve ostalo otkaže
-
-logo_login = Path("Just inCase!.png")
+        pass # Ako fajl fali, aplikacija kulira i ne izbacuje nikakvu crvenu grešku
 
 # --- INICIJALIZACIJA PODATAKA ---
 if 'logged_in' not in st.session_state:
@@ -58,8 +45,7 @@ users = {
 
 # --- LOGIN PROZOR ---
 if not st.session_state.logged_in:
-    if logo_login.exists():
-        st.image(str(logo_login), use_container_width=True)
+    bezbedan_prikaz_logotipa("Just inCase!.png")
     st.subheader("🔑 Logg inn")
     username = st.text_input("Brukernavn", placeholder="miroslav", key="login_user").lower()
     password = st.text_input("Passord", type="password", placeholder="••••", key="login_pass")
@@ -73,54 +59,11 @@ if not st.session_state.logged_in:
             st.error("Feil brukernavn eller passord")
     st.stop()
 
-# --- BOČNA NAVIGACIJA (SIDEBAR) ---
+# --- BOČNA NAVIGACIJA (ČIST FABRIČKI STREAMLIT BEZ HAKOVANJA BOJA) ---
 with st.sidebar:
-    izbor_teme = st.radio("App utseende (Tema):", ["🌙 Mørk", "☀️ Lys"], horizontal=True)
-    st.markdown("---")
+    # Prikazujemo logo u meniju potpuno bezbedno
+    bezbedan_prikaz_logotipa("ICS-utenbord-lys@2x.png")
     
-    # Primenjujemo automatski skener za logo na osnovu teme
-    if izbor_teme == "🌙 Mørk":
-        logo_fajl = pronadji_najbolji_logo("dark")
-        if logo_fajl:
-            st.image(logo_fajl, use_container_width=True)
-            
-        st.markdown("""
-        <style>
-            .stApp { background-color: #0E1117; color: #FAFAFA; }
-            .kundeboks { background-color: #1F232D; border: 1px solid #3f4554; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            .status-u { background-color: #152b1e; border-left: 5px solid #00FF88; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-            .status-ih { background-color: #2b1515; border-left: 5px solid #FF4B4B; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-            .status-vih { background-color: #2b2815; border-left: 5px solid #FBC02D; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-        </style>
-        """, unsafe_allow_html=True)
-    else:
-        logo_fajl = pronadji_najbolji_logo("light")
-        if logo_fajl:
-            st.image(logo_fajl, use_container_width=True)
-            
-        st.markdown("""
-        <style>
-            .stApp { background-color: #FFFFFF; color: #111111; }
-            .kundeboks { background-color: #F1F3F5; border: 1px solid #ced4da; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            .status-u { background-color: #ebfbee; border-left: 5px solid #09b83e; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-            .status-ih { background-color: #fff5f5; border-left: 5px solid #FF4B4B; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-            .status-vih { background-color: #fffde7; border-left: 5px solid #FBC02D; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-            h1, h2, h3, h4, p, label, span { color: #111111 !important; }
-        </style>
-        """, unsafe_allow_html=True)
-
-    # OSIGURANJE DA SE DUGME ZA MENI (HAMBURGER) UVEK VIDI
-    st.markdown("""
-    <style>
-        [data-testid="stSidebarCollapseButton"] button, button[aria-label="Open sidebar"], button[aria-label="Close sidebar"] {
-            color: #FF8C00 !important;
-            background-color: #1F232D !important;
-            border: 1px solid #FF8C00 !important;
-            display: inline-flex !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
     st.write(f"👤 Logget inn: **{st.session_state.current_user}**")
     st.markdown("---")
     
@@ -153,15 +96,13 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
             hnr_izbor = izabrani_k_str.split(" - ")[0]
             kunde_data = next(k for k in st.session_state.mock_kunde_liste if k["hnr"] == hnr_izbor)
             
-            st.markdown(f"""
-            <div class="kundeboks">
-                <span style="font-size: 11px; font-weight: bold; opacity: 0.7;">VERIFIKASJON AV KUNDE:</span><br>
-                <span style="font-size: 20px; font-weight: bold;">👤 {kunde_data['navn']}</span><br>
-                <span style="font-size: 15px;">📍 <b>Adresse:</b> Oppgang {kunde_data['opg']}, Leil LNR {kunde_data['leil']}</span><br>
-                <span style="font-size: 16px; color: #FF8C00;">🔑 <b>H-nummer:</b> {kunde_data['hnr']}</span><br>
-                <span style="font-size: 14px;">📞 <b>Tlf:</b> {kunde_data['tlf']}</span>
-            </div>
-            """, unsafe_allow_html=True)
+            # Jednostavan i čist prikaz podataka o korisniku
+            st.info(f"""
+            👤 **Navn:** {kunde_data['navn']}  
+            📍 **Adresse:** Oppgang {kunde_data['opg']}, Leil LNR {kunde_data['leil']}  
+            🔑 **H-nummer:** {kunde_data['hnr']}  
+            📞 **Tlf:** {kunde_data['tlf']}
+            """)
             
             st.markdown("---")
             st.markdown("### 🚦 Status på arbeid")
@@ -171,7 +112,7 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
             )
             
             if status == "🟢 U (Utført)":
-                st.markdown("<div class='status-u'>🟢 <b>Status 'U' valgt:</b> Alle felt, fotodokumentasjon og signatur er påkrevd.</div>", unsafe_allow_html=True)
+                st.success("🟢 Status 'U' valgt: Sene felt, fotodokumentasjon og signatur er påkrevd.")
                 
                 mac_input = st.text_input("⌨️ MAC-adresse", placeholder="AA:BB:CC:DD:EE:FF").upper().strip()
                 
@@ -211,13 +152,13 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
                     st.balloons()
             
             elif status == "🔴 IH (Ikke Hjemme - Uvarslet)":
-                st.markdown("<div class='status-ih'>🔴 <b>Status 'IH' valgt:</b> Logges som bomtur.</div>", unsafe_allow_html=True)
+                st.error("🔴 Status 'IH' valgt: Logges som bomtur uvarslet.")
                 kommentar_ih = st.text_area("Skriv kort kommentar:")
                 if st.button("Lagre status 'IH'", type="primary", use_container_width=True, disabled=not kommentar_ih):
                     st.error("🚨 Avvik registrert.")
                     
             elif status == "🟡 VIH (Varslet Ikke Hjemme)":
-                st.markdown("<div class='status-vih'>🟡 <b>Status 'VIH' valgt:</b> Ny avtale må gjøres.</div>", unsafe_allow_html=True)
+                st.warning("🟡 Status 'VIH' valgt: Ny avtale må gjøres.")
                 kommentar_vih = st.text_input("Ny avtale / Årsak:")
                 if st.button("Lagre status 'VIH'", type="primary", use_container_width=True, disabled=not kommentar_vih):
                     st.warning("⚠️ Kansellering registrert.")
