@@ -4,18 +4,23 @@ from pathlib import Path
 import zoneinfo
 import re
 
-# Postavljanje vremenske zone za Oslo
+# Vremenska zona za Oslo
 oslo_tz = zoneinfo.ZoneInfo("Europe/Oslo")
 
-st.set_page_config(page_title="InCase CORE", layout="centered")
+# 1. POSTAVLJANJE VAŠEG KOLESNOG IKONA NA VRH TAB-A PRETRAŽIVAČA
+st.set_page_config(
+    page_title="InCase CORE", 
+    page_icon="Ikon-lys.png", 
+    layout="centered"
+)
 
-logo_path = Path("logo.png")
+# Definisanje putanja do novih fabričkih logotipa
+logo_login = Path("Just inCase!.png")
+logo_sidebar = Path("ICS-utenbord-lys@2x.png")
 
-# CSS Stilovi optimizovani za mobilni telefon i jasne statuse
+# CSS Stilovi za moderan izgled i jasne statuse
 st.markdown("""
 <style>
-    .core-title {color: #FF8C00; font-size: 38px; font-weight: 900; letter-spacing: 4px; text-align: center; margin-bottom: 25px;}
-    
     /* Kontejneri za statuse sa terena */
     .status-u {background-color: #f0f7f4; border-left: 5px solid #00FF88; padding: 15px; border-radius: 4px; margin-bottom: 15px;}
     .status-ih {background-color: #fff5f5; border-left: 5px solid #FF4B4B; padding: 15px; border-radius: 4px; margin-bottom: 15px;}
@@ -25,6 +30,9 @@ st.markdown("""
     .spinner-container {display: flex; align-items: center; gap: 12px; background-color: #f0f7f4; border-left: 5px solid #00FF88; padding: 15px; border-radius: 4px; margin-top: 15px;}
     .loader-circle {border: 3px solid #f3f3f3; border-top: 3px solid #00FF88; border-radius: 50%; width: 22px; height: 22px; animation: spin 1s linear infinite;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Okvir za lepe podatke o kupcu */
+    .kundeboks {background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 20px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -37,13 +45,13 @@ if 'timer_start' not in st.session_state:
 if 'v8_time_logs' not in st.session_state:
     st.session_state.v8_time_logs = []
 
-# Baza kupaca izvučena direktno iz tvoje KI Liste (Primeri za test)
+# Baza kupaca izvučena direktno iz tvoje KI Liste
 if 'mock_kunde_liste' not in st.session_state:
     st.session_state.mock_kunde_liste = [
-        {"leil": "004", "opg": "22", "hnr": "H0104", "navn": "Louise Hestness Matthiessen", "tlf": "+47 913 XX XXX", "status": "Venter"},
-        {"leil": "005", "opg": "22", "hnr": "H0105", "navn": "Gerd Eli Johansen", "tlf": "+47 986 XX XXX", "status": "Venter"},
-        {"leil": "006", "opg": "22", "hnr": "H0201", "navn": "Thomas Rønbeck", "tlf": "+47 969 XX XXX", "status": "Venter"},
-        {"leil": "007", "opg": "22", "hnr": "H0202", "navn": "Dordi Johanne Barlaup", "tlf": "+47 489 XX XXX", "status": "Venter"},
+        {"leil": "004", "opg": "22", "hnr": "H0104", "navn": "Louise Hestness Matthiessen", "tlf": "+47 913 XX XXX"},
+        {"leil": "005", "opg": "22", "hnr": "H0105", "navn": "Gerd Eli Johansen", "tlf": "+47 986 XX XXX"},
+        {"leil": "006", "opg": "22", "hnr": "H0201", "navn": "Thomas Rønbeck", "tlf": "+47 969 XX XXX"},
+        {"leil": "007", "opg": "22", "hnr": "H0202", "navn": "Dordi Johanne Barlaup", "tlf": "+47 489 XX XXX"},
     ]
 
 users = {
@@ -55,9 +63,13 @@ users = {
     "miroslav": {"password": "CoreMiro26!", "name": "Miroslav Dordevic"}
 }
 
-# --- LOGGING SYSTEM ---
+# --- LOGIN PROZOR SA NOVIM LOGO BANEROM ---
 if not st.session_state.logged_in:
-    st.markdown("<div class='core-title'>InCase CORE</div>", unsafe_allow_html=True)
+    if logo_login.exists():
+        st.image(str(logo_login), use_container_width=True)
+    else:
+        st.markdown("<h1 style='color: #FF8C00; text-align: center;'>InCase CORE</h1>", unsafe_allow_html=True)
+        
     st.subheader("🔑 Logg inn")
     username = st.text_input("Brukernavn", placeholder="miroslav", key="login_user").lower()
     password = st.text_input("Passord", type="password", placeholder="••••", key="login_pass")
@@ -71,12 +83,12 @@ if not st.session_state.logged_in:
             st.error("Feil brukernavn eller passord")
     st.stop()
 
-# --- BOČNA NAVIGACIJA (HAMBURGER MENI) ---
+# --- BOČNA NAVIGACIJA SA FABRIČKIM LOGO-OM ---
 with st.sidebar:
-    if logo_path.exists():
-        st.image(str(logo_path), use_container_width=True)
+    if logo_sidebar.exists():
+        st.image(str(logo_sidebar), use_container_width=True)
     else:
-        st.markdown("<h2 style='color: #FF8C00; text-align: center;'>InCase CORE</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color: #FF8C00; text-align: center;'>InCase System</h2>", unsafe_allow_html=True)
         
     st.write(f"👤 Logget inn: **{st.session_state.current_user}**")
     st.markdown("---")
@@ -97,10 +109,10 @@ if izbor_stranice == "👤 Min Side":
     st.write("Dette er ditt personlige dashbord.")
     st.info("Bruk menyen øverst til venstre for å navigere til Kunde Listen (KL) eller registrere timer.")
 
-# --- STRANICA 2: KUNDE LISTE (KL) ---
+# --- STRANICA 2: KUNDE LISTE (KL) - MAKSIMALNA PRECIZNOST ---
 elif izbor_stranice == "📋 Kunde Liste (KL)":
     st.markdown("<h2 style='color: #FF8C00;'>📋 Kunde Liste & Installasjon</h2>", unsafe_allow_html=True)
-    st.write("Fase 2 - Installasjon direkte hos kunde.")
+    st.write("Fase 2 - Installasjon direkte hos kunde (Koblet til KI liste).")
     
     projekat = st.selectbox("Velg aktivt prosjekt:", ["", "0114-KI-PLAN V2.0 (Markveien)"])
     
@@ -112,10 +124,9 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
             hnr_izbor = izabrani_k_str.split(" - ")[0]
             kunde_data = next(k for k in st.session_state.mock_kunde_liste if k["hnr"] == hnr_izbor)
             
-            st.markdown("""<style>.kundeboks {background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 20px;}</style>""", unsafe_allow_html=True)
             st.markdown(f"""
             <div class="kundeboks">
-                <span style="color: #777; font-size: 12px; font-weight: bold;">VERIFIKASJON AV KUNDE:</span><br>
+                <span style="color: #777; font-size: 11px; font-weight: bold;">VERIFIKASJON AV KUNDE:</span><br>
                 <span style="font-size: 20px; font-weight: bold; color: #111;">👤 {kunde_data['navn']}</span><br>
                 <span style="font-size: 15px; color: #333;">📍 <b>Adresse:</b> Oppgang {kunde_data['opg']}, Leil LNR {kunde_data['leil']}</span><br>
                 <span style="font-size: 16px; color: #FF8C00;">🔑 <b>H-nummer:</b> {kunde_data['hnr']}</span><br>
@@ -132,6 +143,7 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
                 index=0
             )
             
+            # 🟢 STATUS UTFERT (Zatvaranje posla sa proverama)
             if status == "🟢 U (Utført)":
                 st.markdown("<div class='status-u'>🟢 <b>Status 'U' valgt:</b> Alle tekniske felt, fotodokumentasjon og signatur er påkrevd.</div>", unsafe_allow_html=True)
                 
@@ -154,7 +166,7 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
                 
                 st.markdown("#### ✍️ Kunde Signatur (Obligatorisk)")
                 bilde_signatur = st.file_uploader("Ta bilde av kundens fysiske signatur (eller signert skjema)", type=["jpg", "jpeg", "png"], key="cam_sig")
-                k_navn_signatur = st.text_input("Skriv inn kundens fulle navn for digital signering:", placeholder="Fullt navn")
+                k_navn_signatur = st.text_input("Skriv inn kundens fulle navn for digital verifikasjon:", placeholder="Fullt navn")
                 
                 error_found = False
                 mac_pattern = re.compile(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$')
@@ -165,31 +177,28 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
                 else:
                     error_found = True
                     
-                if not bilde_mac:
-                    st.warning("⚠️ Fotodokumentasjon av MAC-adresse mangler.")
-                    error_found = True
-                if not bilde_signatur and not k_navn_signatur:
-                    st.warning("⚠️ Kundens signatur mangler.")
-                    error_found = True
-                if not sw_port or not odf_port or not tx_1310 or not rx_1550:
-                    st.warning("⚠️ Alle tekniske målinger og porter må fylles ut.")
+                if not bilde_mac or not bilde_signatur or not sw_port or not odf_port or not tx_1310 or not rx_1550:
                     error_found = True
                 
                 if st.button("🚀 LAGRE OG LUKK POSAO", type="primary", disabled=error_found, use_container_width=True):
-                    st.success(f"🎉 Installasjon fullført for {kunde_data['navn']}! Lagret i kolone AI, BY, CA, CC, CG, CI.")
+                    st.success(f"🎉 Installasjon fullført! Data sendt til tabell kolone AI, BY, CA, CC, CG, CI.")
+                    # SMS SIMULACIJA (Poruka sa Google Review Linkom)
+                    st.info(f"📲 Automatisert SMS sendt til {kunde_data['tlf']}: 'Takk for at du valgte InCase! Gi oss gjerne din tilbakemelding på Google...'")
                     st.balloons()
             
+            # 🔴 STATUS IH (Nije kući - uvarslet)
             elif status == "🔴 IH (Ikke Hjemme - Uvarslet)":
                 st.markdown("<div class='status-ih'>🔴 <b>Status 'IH' valgt:</b> Kunden var ikke hjemme (Uvarslet). Logges som bomtur.</div>", unsafe_allow_html=True)
                 kommentar_ih = st.text_area("Skriv kort kommentar:")
                 if st.button("Lagre status 'IH'", type="primary", use_container_width=True, disabled=not kommentar_ih):
-                    st.error("🚨 Avvik registrert i Excel: Kunden var ikke hjemme.")
+                    st.error("🚨 Avvik registrert uvarslet i Excel.")
                     
+            # 🟡 STATUS VIH (Otkazano na vreme)
             elif status == "🟡 VIH (Varslet Ikke Hjemme)":
                 st.markdown("<div class='status-vih'>🟡 <b>Status 'VIH' valgt:</b> Kunden har varslet på forhånd. Ny avtale må gjøres.</div>", unsafe_allow_html=True)
                 kommentar_vih = st.text_input("Ny avtale / Årsak:")
                 if st.button("Lagre status 'VIH'", type="primary", use_container_width=True, disabled=not kommentar_vih):
-                    st.warning("⚠️ Kansellering registrert i Excel: Kunden har varslet.")
+                    st.warning("⚠️ Kansellering registrert varslet i Excel.")
 
 # --- STRANICA 3: REGISTRER TID ---
 elif izbor_stranice == "⏱️ Reg. Tid":
