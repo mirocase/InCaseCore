@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import zoneinfo
 import re
+import os
 
 # Vremenska zona za Oslo
 oslo_tz = zoneinfo.ZoneInfo("Europe/Oslo")
@@ -13,10 +14,26 @@ st.set_page_config(
     layout="centered"
 )
 
-# Definisanje putanja do originalnih logotipa
+# --- PAMETNI AUTOMATSKI SKENER LOGOTIPA ---
+# Skener koji ignoriše velika i mala slova i pronalazi logo na serveru bez obzira na naziv
+def pronadji_najbolji_logo(tip_teme):
+    try:
+        svi_fajlovi = os.listdir('.')
+        # Ako je tamna tema, tražimo beli logo (sa rečju 'lys'), ako je svetla tražimo tamni logo ('mørk')
+        if tip_teme == "dark":
+            prioriteti = ['ics-utenbord-lys@2x', 'ics-utenbord-lys', 'ic-utenbord-lys@2x', 'ic-utenbord-lys', 'just incase']
+        else:
+            prioriteti = ['ics-utenbord-mørk@2x', 'ics-utenbord-mørk', 'ic-utenbord-mørk@2x', 'ic-utenbord-mørk', 'just incase']
+            
+        for prioritet in prioriteti:
+            for fajl in svi_fajlovi:
+                if prioritet in fajl.lower() and fajl.lower().endswith('.png'):
+                    return fajl
+    except:
+        pass
+    return "Just inCase!.png" # Sigurna rezerva ako sve ostalo otkaže
+
 logo_login = Path("Just inCase!.png")
-logo_dark_theme = Path("ICS-utenbord-lys@2x.png")
-logo_light_theme = Path("ICS-utenbord-mørk@2x.png")
 
 # --- INICIJALIZACIJA PODATAKA ---
 if 'logged_in' not in st.session_state:
@@ -58,15 +75,15 @@ if not st.session_state.logged_in:
 
 # --- BOČNA NAVIGACIJA (SIDEBAR) ---
 with st.sidebar:
-    # 🌟 TVOJA IDEJA: Prekidač za temu na vrhu menija
     izbor_teme = st.radio("App utseende (Tema):", ["🌙 Mørk", "☀️ Lys"], horizontal=True)
     st.markdown("---")
     
-    # Automatsko menjanje logotipa na osnovu izabrane teme
+    # Primenjujemo automatski skener za logo na osnovu teme
     if izbor_teme == "🌙 Mørk":
-        if logo_dark_theme.exists():
-            st.image(str(logo_dark_theme), use_container_width=True)
-        # Dinamički CSS za Tamni mod
+        logo_fajl = pronadji_najbolji_logo("dark")
+        if logo_fajl:
+            st.image(logo_fajl, use_container_width=True)
+            
         st.markdown("""
         <style>
             .stApp { background-color: #0E1117; color: #FAFAFA; }
@@ -77,9 +94,10 @@ with st.sidebar:
         </style>
         """, unsafe_allow_html=True)
     else:
-        if logo_light_theme.exists():
-            st.image(str(logo_light_theme), use_container_width=True)
-        # Dinamički CSS za Svetli mod (Čist, pregledan, bez sudaranja boja)
+        logo_fajl = pronadji_najbolji_logo("light")
+        if logo_fajl:
+            st.image(logo_fajl, use_container_width=True)
+            
         st.markdown("""
         <style>
             .stApp { background-color: #FFFFFF; color: #111111; }
@@ -91,12 +109,14 @@ with st.sidebar:
         </style>
         """, unsafe_allow_html=True)
 
-    # OSIGURANJE DA SE DUGME ZA MENI UVEK VIDI (NARANDŽASTA BOJA)
+    # OSIGURANJE DA SE DUGME ZA MENI (HAMBURGER) UVEK VIDI
     st.markdown("""
     <style>
-        [data-testid="stSidebarCollapseButton"] button, button[aria-label="Open sidebar"] {
+        [data-testid="stSidebarCollapseButton"] button, button[aria-label="Open sidebar"], button[aria-label="Close sidebar"] {
             color: #FF8C00 !important;
-            background-color: transparent !important;
+            background-color: #1F232D !important;
+            border: 1px solid #FF8C00 !important;
+            display: inline-flex !important;
         }
     </style>
     """, unsafe_allow_html=True)
