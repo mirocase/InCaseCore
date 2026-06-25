@@ -18,8 +18,6 @@ st.set_page_config(
 logo_login = Path("Just inCase!.png")
 
 # --- PAMETNI SKENER ZA LOGO U MENIJU ---
-# Aplikacija će redom tražiti ove fajlove na serveru i prikazati prvi koji nađe. 
-# Ako ne nađe nijedan, meni će ostati čist, bez ikakvog ružnog narandžastog teksta.
 sidebar_logo_options = [
     "ICS-utenbord-lys@2x.png",
     "ICS-utenbord-lys.png",
@@ -34,16 +32,49 @@ for opcija in sidebar_logo_options:
         nadjen_logo_sidebar = opcija
         break
 
-# CSS Stilovi za moderan izgled i jasne statuse
+# --- STROGO FORSIRANJE TAMNE TEME (Sprečava katastrofalan Light Mode) ---
 st.markdown("""
 <style>
-    .status-u {background-color: #f0f7f4; border-left: 5px solid #00FF88; padding: 15px; border-radius: 4px; margin-bottom: 15px;}
-    .status-ih {background-color: #fff5f5; border-left: 5px solid #FF4B4B; padding: 15px; border-radius: 4px; margin-bottom: 15px;}
-    .status-vih {background-color: #fffde7; border-left: 5px solid #FBC02D; padding: 15px; border-radius: 4px; margin-bottom: 15px;}
-    .spinner-container {display: flex; align-items: center; gap: 12px; background-color: #f0f7f4; border-left: 5px solid #00FF88; padding: 15px; border-radius: 4px; margin-top: 15px;}
+    /* Sileći tamnu pozadinu i svetli tekst na celoj aplikaciji */
+    html, body, .stApp {
+        background-color: #0E1117 !important;
+        color: #FAFAFA !important;
+    }
+    
+    /* Prisilan tamni bočni meni */
+    [data-testid="stSidebar"] {
+        background-color: #161A24 !important;
+    }
+    
+    /* Svi naslovi, tekstovi i oznake moraju biti čisto beli radi čitljivosti */
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span, small {
+        color: #FAFAFA !important;
+    }
+    
+    /* Tamna polja za unos sa svetlim tekstom i čistim ivicama */
+    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
+        background-color: #1F232D !important;
+        color: #FAFAFA !important;
+        border: 1px solid #3f4554 !important;
+    }
+    
+    /* Boja teksta unutar izabranih stavki u meniju */
+    div[data-testid="stMarkdownContainer"] p {
+        color: #FAFAFA !important;
+    }
+    
+    /* Prilagođeni tamni kontejneri za statuse koji sada izgledaju vrhunski */
+    .status-u {background-color: #152b1e; border-left: 5px solid #00FF88; padding: 15px; border-radius: 6px; margin-bottom: 15px;}
+    .status-ih {background-color: #2b1515; border-left: 5px solid #FF4B4B; padding: 15px; border-radius: 6px; margin-bottom: 15px;}
+    .status-vih {background-color: #2b2815; border-left: 5px solid #FBC02D; padding: 15px; border-radius: 6px; margin-bottom: 15px;}
+    
+    /* Tajmer animacija */
+    .spinner-container {display: flex; align-items: center; gap: 12px; background-color: #152b1e; border-left: 5px solid #00FF88; padding: 15px; border-radius: 6px; margin-top: 15px;}
     .loader-circle {border: 3px solid #f3f3f3; border-top: 3px solid #00FF88; border-radius: 50%; width: 22px; height: 22px; animation: spin 1s linear infinite;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .kundeboks {background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 20px;}
+    
+    /* Kutija sa podacima o korisniku */
+    .kundeboks {background-color: #1F232D; padding: 15px; border-radius: 8px; border: 1px solid #3f4554; margin-bottom: 20px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -54,7 +85,6 @@ if 'logged_in' not in st.session_state:
 if 'timer_start' not in st.session_state:
     st.session_state.timer_start = None
 
-# Baza kupaca izvučena direktno iz tvoje KI Liste
 if 'mock_kunde_liste' not in st.session_state:
     st.session_state.mock_kunde_liste = [
         {"leil": "004", "opg": "22", "hnr": "H0104", "navn": "Louise Hestness Matthiessen", "tlf": "+47 913 XX XXX"},
@@ -88,7 +118,6 @@ if not st.session_state.logged_in:
 
 # --- BOČNA NAVIGACIJA (SIDEBAR) ---
 with st.sidebar:
-    # Ako je skener našao bilo koji logo, prikazaće ga ovde. Nema više tekstualnog fallback-a!
     if nadjen_logo_sidebar:
         st.image(nadjen_logo_sidebar, use_container_width=True)
         
@@ -109,7 +138,6 @@ with st.sidebar:
 if izbor_stranice == "👤 Min Side":
     st.markdown(f"<h2>Velkommen, {st.session_state.current_user} 👋</h2>", unsafe_allow_html=True)
     st.write("Dette er ditt personlige dashbord.")
-    st.info("Bruk menyen øverst til venstre for å navigere.")
 
 # --- STRANICA: KUNDE LISTE (KL) ---
 elif izbor_stranice == "📋 Kunde Liste (KL)":
@@ -127,11 +155,11 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
             
             st.markdown(f"""
             <div class="kundeboks">
-                <span style="color: #777; font-size: 11px; font-weight: bold;">VERIFIKASJON AV KUNDE:</span><br>
-                <span style="font-size: 20px; font-weight: bold; color: #111;">👤 {kunde_data['navn']}</span><br>
-                <span style="font-size: 15px; color: #333;">📍 <b>Adresse:</b> Oppgang {kunde_data['opg']}, Leil LNR {kunde_data['leil']}</span><br>
+                <span style="color: #aaa; font-size: 11px; font-weight: bold;">VERIFIKASJON AV KUNDE:</span><br>
+                <span style="font-size: 20px; font-weight: bold; color: #FAFAFA;">👤 {kunde_data['navn']}</span><br>
+                <span style="font-size: 15px; color: #ddd;">📍 <b>Adresse:</b> Oppgang {kunde_data['opg']}, Leil LNR {kunde_data['leil']}</span><br>
                 <span style="font-size: 16px; color: #FF8C00;">🔑 <b>H-nummer:</b> {kunde_data['hnr']}</span><br>
-                <span style="font-size: 14px; color: #555;">📞 <b>Tlf:</b> {kunde_data['tlf']}</span>
+                <span style="font-size: 14px; color: #ccc;">📞 <b>Tlf:</b> {kunde_data['tlf']}</span>
             </div>
             """, unsafe_allow_html=True)
             
@@ -190,7 +218,7 @@ elif izbor_stranice == "📋 Kunde Liste (KL)":
                     st.error("🚨 Avvik registrert.")
                     
             elif status == "🟡 VIH (Varslet Ikke Hjemme)":
-                st.markdown("<div class='status-vih'>🟡 <b>Status 'VIH' valgt:</b> Ny avtale må gjøres.</div>", unsafe_allow_html=True)
+                st.markdown("<div class='status-vih'>🟡 <b>Status 'VIH' valgt:</b> Ny avtale må gjəres.</div>", unsafe_allow_html=True)
                 kommentar_vih = st.text_input("Ny avtale / Årsak:")
                 if st.button("Lagre status 'VIH'", type="primary", use_container_width=True, disabled=not kommentar_vih):
                     st.warning("⚠️ Kansellering registrert.")
@@ -211,6 +239,6 @@ elif izbor_stranice == "⏱️ Reg. Tid":
         st.markdown(f"""
         <div class="spinner-container">
             <div class="loader-circle"></div>
-            <div style="color: #1e3a2f; font-weight: 500;">🟢 Tidsregistrering er aktiv... (Startet kl. {start_str})</div>
+            <div style="color: #FAFAFA; font-weight: 500;">🟢 Tidsregistrering er aktiv... (Startet kl. {start_str})</div>
         </div>
         """, unsafe_allow_html=True)
